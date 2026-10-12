@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Todo</title>
+  <meta name="description" content="A simple, fast todo list that saves in your browser." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>Todo</h1>
+      <p class="sub" id="summary">Nothing to do yet</p>
+    </header>
+
+    <form id="new-form" autocomplete="off">
+      <input id="new-input" type="text" placeholder="What needs to be done?" maxlength="200" aria-label="New task" required />
+      <button type="submit">Add</button>
+    </form>
+
+    <nav class="filters" role="tablist">
+      <button data-filter="all" class="active">All</button>
+      <button data-filter="active">Active</button>
+      <button data-filter="done">Done</button>
+    </nav>
+
+    <ul id="list" class="list"></ul>
+    <p id="empty" class="empty">No tasks here.</p>
+
+    <footer>
+      <button id="clear-done" class="link">Clear completed</button>
+      <span class="hint">Double-click a task to edit</span>
+    </footer>
+  </main>
+
+  <template id="item-tpl">
+    <li class="item">
+      <input type="checkbox" class="toggle" aria-label="Mark done" />
+      <span class="text"></span>
+      <button class="del" aria-label="Delete task">×</button>
+    </li>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
