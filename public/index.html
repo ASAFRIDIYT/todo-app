@@ -3,37 +3,55 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Todo</title>
-  <meta name="description" content="A simple, fast todo list that saves in your browser." />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>" />
+  <title>Study Todo</title>
+  <meta name="description" content="Neon study checklist — tick topics as you learn them." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;500;600&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="grid-bg" aria-hidden="true"></div>
+
   <main class="app">
     <header>
-      <h1>Todo</h1>
-      <p class="sub" id="summary">Nothing to do yet</p>
+      <h1 class="neon-title">Study<span>Todo</span></h1>
+      <p class="sub" id="summary"></p>
+      <div class="bar big"><div class="fill" id="total-fill"></div></div>
     </header>
 
     <form id="new-form" autocomplete="off">
-      <input id="new-input" type="text" placeholder="What needs to be done?" maxlength="200" aria-label="New task" required />
+      <input id="new-input" type="text" placeholder="Nayi task likho…" maxlength="200" aria-label="New task" required />
+      <select id="new-group" aria-label="Section"></select>
       <button type="submit">Add</button>
     </form>
 
-    <nav class="filters" role="tablist">
+    <nav class="filters">
       <button data-filter="all" class="active">All</button>
-      <button data-filter="active">Active</button>
+      <button data-filter="active">Baqi</button>
       <button data-filter="done">Done</button>
     </nav>
 
-    <ul id="list" class="list"></ul>
-    <p id="empty" class="empty">No tasks here.</p>
+    <div id="groups"></div>
+    <p id="empty" class="empty">Yahan koi task nahi.</p>
 
     <footer>
-      <button id="clear-done" class="link">Clear completed</button>
-      <span class="hint">Double-click a task to edit</span>
+      <button id="reset" class="link">Reset to default list</button>
+      <span class="hint">Double-click to edit</span>
     </footer>
   </main>
+
+  <template id="group-tpl">
+    <section class="group">
+      <button class="group-head" aria-expanded="true">
+        <span class="chev">▸</span>
+        <span class="g-title"></span>
+        <span class="g-count"></span>
+      </button>
+      <div class="bar"><div class="fill"></div></div>
+      <ul class="list"></ul>
+    </section>
+  </template>
 
   <template id="item-tpl">
     <li class="item">
@@ -43,6 +61,7 @@
     </li>
   </template>
 
+  <script src="topics.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

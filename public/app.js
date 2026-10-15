@@ -1,20 +1,37 @@
-const KEY = "todo-app:v1";
+const KEY = "todo-app:v2";
+const OLD_KEY = "todo-app:v1";
+const MY_GROUP = "Meri Tasks";
+const GROUPS = [...DEFAULT_TOPICS.map(([g]) => g), MY_GROUP];
 
 let todos = load();
 let filter = "all";
+const collapsed = new Set();
 
 const form = document.getElementById("new-form");
 const input = document.getElementById("new-input");
-const list = document.getElementById("list");
+const groupSelect = document.getElementById("new-group");
+const groupsEl = document.getElementById("groups");
 const empty = document.getElementById("empty");
 const summary = document.getElementById("summary");
-const tpl = document.getElementById("item-tpl");
+const totalFill = document.getElementById("total-fill");
+const groupTpl = document.getElementById("group-tpl");
+const itemTpl = document.getElementById("item-tpl");
+
+function defaults() {
+  return DEFAULT_TOPICS.flatMap(([group, items]) =>
+    items.map(([text, done]) => ({ id: crypto.randomUUID(), text, done, group }))
+  );
+}
 
 function load() {
   try {
-    return JSON.parse(localStorage.getItem(KEY)) || [];
+    const saved = JSON.parse(localStorage.getItem(KEY));
+    if (saved) return saved;
+    // first run on v2: seed the study list, keep any tasks from the old version
+    const old = (JSON.parse(localStorage.getItem(OLD_KEY)) || []).map((t) => ({ ...t, group: MY_GROUP }));
+    return [...defaults(), ...old];
   } catch {
-    return [];
+    return defaults();
   }
 }
 
@@ -26,27 +43,47 @@ function save() {
   }
 }
 
+GROUPS.forEach((g) => groupSelect.add(new Option(g, g)));
+groupSelect.value = MY_GROUP;
+
 function render() {
-  const visible = todos.filter((t) =>
-    filter === "active" ? !t.done : filter === "done" ? t.done : true
-  );
+  const show = (t) => (filter === "active" ? !t.done : filter === "done" ? t.done : true);
 
-  list.replaceChildren(
-    ...visible.map((t) => {
-      const li = tpl.content.firstElementChild.cloneNode(true);
-      li.dataset.id = t.id;
-      li.classList.toggle("done", t.done);
-      li.querySelector(".toggle").checked = t.done;
-      li.querySelector(".text").textContent = t.text;
-      return li;
-    })
-  );
+  const sections = GROUPS.map((g) => {
+    const all = todos.filter((t) => t.group === g);
+    const visible = all.filter(show);
+    if (!visible.length) return null;
 
-  empty.style.display = visible.length ? "none" : "block";
-  const left = todos.filter((t) => !t.done).length;
-  summary.textContent = todos.length
-    ? `${left} of ${todos.length} left`
-    : "Nothing to do yet";
+    const sec = groupTpl.content.firstElementChild.cloneNode(true);
+    const doneCount = all.filter((t) => t.done).length;
+    sec.dataset.group = g;
+    sec.classList.toggle("collapsed", collapsed.has(g));
+    sec.classList.toggle("complete", doneCount === all.length);
+    sec.querySelector(".group-head").setAttribute("aria-expanded", !collapsed.has(g));
+    sec.querySelector(".g-title").textContent = g;
+    sec.querySelector(".g-count").textContent = `${doneCount}/${all.length}`;
+    sec.querySelector(".fill").style.width = `${(doneCount / all.length) * 100}%`;
+
+    sec.querySelector(".list").append(
+      ...visible.map((t) => {
+        const li = itemTpl.content.firstElementChild.cloneNode(true);
+        li.dataset.id = t.id;
+        li.classList.toggle("done", t.done);
+        li.querySelector(".toggle").checked = t.done;
+        li.querySelector(".text").textContent = t.text;
+        return li;
+      })
+    );
+    return sec;
+  }).filter(Boolean);
+
+  groupsEl.replaceChildren(...sections);
+  empty.style.display = sections.length ? "none" : "block";
+
+  const done = todos.filter((t) => t.done).length;
+  const pct = todos.length ? Math.round((done / todos.length) * 100) : 0;
+  summary.textContent = `${done} / ${todos.length} topics done · ${pct}%`;
+  totalFill.style.width = `${pct}%`;
 }
 
 function update(fn) {
@@ -59,26 +96,38 @@ form.addEventListener("submit", (e) => {
   e.preventDefault();
   const text = input.value.trim();
   if (!text) return;
-  update(() => todos.unshift({ id: crypto.randomUUID(), text, done: false }));
+  const group = groupSelect.value;
+  collapsed.delete(group);
+  update(() => todos.push({ id: crypto.randomUUID(), text, done: false, group }));
   input.value = "";
 });
 
-list.addEventListener("change", (e) => {
+groupsEl.addEventListener("change", (e) => {
   if (!e.target.classList.contains("toggle")) return;
   const id = e.target.closest(".item").dataset.id;
   update(() => {
-    const t = todos.find((t) => t.id === id);
-    t.done = e.target.checked;
+    todos.find((t) => t.id === id).done = e.target.checked;
   });
+  if (e.target.checked) {
+    const li = groupsEl.querySelector(`[data-id="${id}"]`);
+    if (li) li.classList.add("pop");
+  }
 });
 
-list.addEventListener("click", (e) => {
+groupsEl.addEventListener("click", (e) => {
+  const head = e.target.closest(".group-head");
+  if (head) {
+    const g = head.closest(".group").dataset.group;
+    collapsed.has(g) ? collapsed.delete(g) : collapsed.add(g);
+    render();
+    return;
+  }
   if (!e.target.classList.contains("del")) return;
   const id = e.target.closest(".item").dataset.id;
   update(() => (todos = todos.filter((t) => t.id !== id)));
 });
 
-list.addEventListener("dblclick", (e) => {
+groupsEl.addEventListener("dblclick", (e) => {
   const span = e.target.closest(".text");
   if (!span) return;
   const id = span.closest(".item").dataset.id;
@@ -120,8 +169,9 @@ document.querySelector(".filters").addEventListener("click", (e) => {
   render();
 });
 
-document.getElementById("clear-done").addEventListener("click", () => {
-  update(() => (todos = todos.filter((t) => !t.done)));
+document.getElementById("reset").addEventListener("click", () => {
+  if (!confirm("Saari progress mita kar default list wapas laani hai?")) return;
+  update(() => (todos = defaults()));
 });
 
 render();
